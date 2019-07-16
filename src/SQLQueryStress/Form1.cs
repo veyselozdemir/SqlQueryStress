@@ -85,18 +85,18 @@ namespace SQLQueryStress
         //WAITFOR DELAY '00:00:05'  (1300 ms?? WTF??)
         private int _totalTimeMessages;
 
-        public Form1(string configFile, bool unattendedMode, int numThreads, string autoSaveFilePath, string testName) : this()
+        public Form1(CommandLineOptions options) : this()
         {
-            _autoSaveFilePath = autoSaveFilePath;
-            _testName = testName;
+            _autoSaveFilePath = options.AutoSaveFilePath;
+            _testName = options.TestName;
 
-            if (string.IsNullOrWhiteSpace(configFile) != true)
+            if (string.IsNullOrWhiteSpace(options.SessionFile) != true)
             {
-                var isConfigFileExists = File.Exists(configFile);
+                var isConfigFileExists = File.Exists(options.SessionFile);
                 if (isConfigFileExists)
                 {
-                    OpenConfigFile(configFile);
-                    _unattendedMode = unattendedMode;
+                    OpenConfigFile(options.SessionFile);
+                    _unattendedMode = options.Unattended;
                     if (_unattendedMode)
                     {
                         Load += StartProcessing;
@@ -104,13 +104,18 @@ namespace SQLQueryStress
                 }
                 else
                 {
-                    throw new ArgumentException(string.Format("Config file could not be found: {0}", configFile)); 
+                    throw new ArgumentException(string.Format("Config file could not be found: {0}", options.SessionFile)); 
                 }
             }
 
-            if (numThreads > 0)
+            if (options.NumberOfThreads > 0)
             {
-                threads_numericUpDown.Value = _settings.NumThreads = numThreads;
+                threads_numericUpDown.Value = _settings.NumThreads = options.NumberOfThreads;
+            }
+
+            if (string.IsNullOrWhiteSpace(options.DbServer) != true)
+            {
+                _settings.MainDbConnectionInfo.Server = options.DbServer;
             }
         }
 
@@ -538,7 +543,12 @@ namespace SQLQueryStress
                     MaxPoolSize = 2
                 };
                 ShareDbSettings = true;
-                ParamDbConnectionInfo = new DatabaseSelect.ConnectionInfo();
+                ParamDbConnectionInfo = new DatabaseSelect.ConnectionInfo()
+                {
+                    ConnectionTimeout = 15,
+                    EnableConnectionPooling = true,
+                    MaxPoolSize = 2
+                };
                 MainQuery = "";
                 ParamQuery = "";
                 NumThreads = 1;

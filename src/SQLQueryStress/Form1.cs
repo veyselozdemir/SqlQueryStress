@@ -344,24 +344,8 @@ namespace SQLQueryStress
 
         private void OpenConfigFile(string fileName)
         {
-            FileStream fs = null;
-
-            try
-            {
-                fs = new FileStream(fileName, FileMode.Open);
-                var bf = new BinaryFormatter();
-
-                _settings = (QueryStressSettings) bf.Deserialize(fs);
-            }
-            catch
-            {
-                MessageBox.Show(Resources.ErrLoadingSettings);
-            }
-            finally
-            {
-                if (fs != null)
-                    fs.Dispose();
-            }
+            var jsonString = File.ReadAllText(fileName);
+            _settings = Newtonsoft.Json.JsonConvert.DeserializeObject<QueryStressSettings>(jsonString);
 
             var sqlControl = elementHost1.Child as SqlControl;
             if (sqlControl != null)
@@ -396,24 +380,8 @@ namespace SQLQueryStress
 
         private void saveFileDialog1_FileOk(object sender, EventArgs e)
         {
-            FileStream fs = null;
-
-            try
-            {
-                fs = new FileStream(saveFileDialog1.FileName, FileMode.Create);
-                var bf = new BinaryFormatter();
-
-                bf.Serialize(fs, _settings);
-            }
-            catch
-            {
-                MessageBox.Show(Resources.ErrorSavingSettings);
-            }
-            finally
-            {
-                if (fs != null)
-                    fs.Dispose();
-            }
+            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(_settings, Newtonsoft.Json.Formatting.Indented);
+            File.WriteAllText(saveFileDialog1.FileName, jsonString);
         }
 
         private void SaveSettingsFromForm1()
@@ -423,6 +391,7 @@ namespace SQLQueryStress
             _settings.NumThreads = (int) threads_numericUpDown.Value;
             _settings.NumIterations = (int) iterations_numericUpDown.Value;
             _settings.DelayBetweenQueries = int.Parse(queryDelay_textBox.Text);
+            _settings.MainDbConnectionInfo.MaxPoolSize = _settings.NumThreads * 2;
         }
 
         private void saveSettingsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -505,16 +474,6 @@ namespace SQLQueryStress
             public int CommandTimeout;
 
             /// <summary>
-            ///     Connection Timeout
-            /// </summary>
-            public int ConnectionTimeout;
-
-            /// <summary>
-            ///     Enable pooling?
-            /// </summary>
-            public bool EnableConnectionPooling;
-
-            /// <summary>
             ///     Force the client to retrieve all data?
             /// </summary>
             public bool ForceDataRetrieval;
@@ -572,7 +531,12 @@ namespace SQLQueryStress
 
             public QueryStressSettings()
             {
-                MainDbConnectionInfo = new DatabaseSelect.ConnectionInfo(this);
+                MainDbConnectionInfo = new DatabaseSelect.ConnectionInfo()
+                {
+                    ConnectionTimeout = 15, 
+                    EnableConnectionPooling = true, 
+                    MaxPoolSize = 2
+                };
                 ShareDbSettings = true;
                 ParamDbConnectionInfo = new DatabaseSelect.ConnectionInfo();
                 MainQuery = "";
@@ -580,20 +544,13 @@ namespace SQLQueryStress
                 NumThreads = 1;
                 NumIterations = 1;
                 ParamMappings = new Dictionary<string, string>();
-                ConnectionTimeout = 15;
                 CommandTimeout = 0;
-                EnableConnectionPooling = true;
                 CollectIoStats = true;
                 CollectTimeStats = true;
                 ForceDataRetrieval = false;
                 KillQueriesOnCancel = true;
             }
 
-            [OnDeserialized]
-            private void FixSettings(StreamingContext context)
-            {
-                ConnectionTimeout = ConnectionTimeout == 0 ? 15 : ConnectionTimeout;
-            }
         }
 
         private void btnCleanBuffer_Click(object sender, EventArgs e)

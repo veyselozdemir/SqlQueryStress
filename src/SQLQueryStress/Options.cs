@@ -17,9 +17,9 @@ namespace SQLQueryStress
 
             InitializeComponent();
 
-            connectionTimeout_numericUpDown.Value = settings.ConnectionTimeout;
+            connectionTimeout_numericUpDown.Value = settings.MainDbConnectionInfo.ConnectionTimeout;
             commandTimeout_numericUpDown.Value = settings.CommandTimeout;
-            connectionPooling_checkBox.Checked = settings.EnableConnectionPooling;
+            connectionPooling_checkBox.Checked = settings.MainDbConnectionInfo.EnableConnectionPooling;
             IOStatistics_checkBox.Checked = settings.CollectIoStats;
             timeStatistics_checkBox.Checked = settings.CollectTimeStats;
             clientDataRetrieval_checkBox.Checked = settings.ForceDataRetrieval;
@@ -33,9 +33,9 @@ namespace SQLQueryStress
 
         private void ok_button_Click(object sender, EventArgs e)
         {
-            _settings.ConnectionTimeout = (int) connectionTimeout_numericUpDown.Value;
+            _settings.MainDbConnectionInfo.ConnectionTimeout = (int) connectionTimeout_numericUpDown.Value;
             _settings.CommandTimeout = (int) commandTimeout_numericUpDown.Value;
-            _settings.EnableConnectionPooling = connectionPooling_checkBox.Checked;
+            _settings.MainDbConnectionInfo.EnableConnectionPooling = connectionPooling_checkBox.Checked;
             _settings.CollectIoStats = IOStatistics_checkBox.Checked;
             _settings.CollectTimeStats = timeStatistics_checkBox.Checked;
             _settings.ForceDataRetrieval = clientDataRetrieval_checkBox.Checked;

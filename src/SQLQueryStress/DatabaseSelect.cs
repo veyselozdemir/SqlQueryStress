@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Data.SqlClient;
 using System.Windows.Forms;
 using SQLQueryStress.Properties;
@@ -339,7 +340,9 @@ namespace SQLQueryStress
             public string Password;
 
             public string Server;
-            public Form1.QueryStressSettings Settings;
+            public int ConnectionTimeout;
+            public bool EnableConnectionPooling;
+            public int MaxPoolSize; 
 
             public ConnectionInfo()
             {
@@ -350,16 +353,13 @@ namespace SQLQueryStress
                 Database = "";
             }
 
-            public ConnectionInfo(Form1.QueryStressSettings settings)
+            [OnDeserialized]
+            private void FixSettings(StreamingContext context)
             {
-                Server = "";
-                IntegratedAuth = true;
-                Login = "";
-                Password = "";
-                Database = "";
-                Settings = settings;
+                ConnectionTimeout = ConnectionTimeout == 0 ? 15 : ConnectionTimeout;
             }
 
+            [Newtonsoft.Json.JsonIgnore]
             public string ConnectionString
             {
                 get
@@ -374,12 +374,9 @@ namespace SQLQueryStress
                     if (Database.Length > 0)
                         build.InitialCatalog = Database;
 
-                    if (Settings != null)
-                    {
-                        build.ConnectTimeout = Settings.ConnectionTimeout;
-                        build.Pooling = Settings.EnableConnectionPooling;
-                        build.MaxPoolSize = Settings.NumThreads * 2;
-                    }
+                    build.ConnectTimeout = ConnectionTimeout;
+                    build.Pooling = EnableConnectionPooling;
+                    build.MaxPoolSize = MaxPoolSize;
 
                     return build.ConnectionString;
                 }
@@ -404,6 +401,9 @@ namespace SQLQueryStress
                 to.Login = Login;
                 to.Password = Password;
                 to.Database = Database;
+                to.ConnectionTimeout = ConnectionTimeout;
+                to.EnableConnectionPooling = EnableConnectionPooling;
+                to.MaxPoolSize = MaxPoolSize; 
             }
 
             public bool TestConnection()

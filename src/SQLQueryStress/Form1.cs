@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -687,7 +688,14 @@ namespace SQLQueryStress
 
             if (addHeader == true)
             {
-                tw.WriteLine("TestName,TestId,Timestamp,ElapsedTime,Iterations,Threads,Delay,CompletedIterations,AvgCPUSeconds,AvgActualSeconds,AvgClientSeconds,AvgLogicalReads"); 
+                var testNameHeader = "TestName"; 
+                var headerCountForName = _testName.Count(c => c == ',') + 1;
+                if (headerCountForName > 1)
+                {
+                    testNameHeader = string.Join(",", Enumerable.Range(1, headerCountForName).Select(i => "TestName_" + i)); 
+                }
+                
+                tw.WriteLine(testNameHeader + ",TestId,Timestamp,ElapsedTime,Iterations,Threads,Delay,CompletedIterations,AvgCPUSeconds,AvgActualSeconds,AvgClientSeconds,AvgLogicalReads"); 
             }
             tw.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}", 
                 _testName,

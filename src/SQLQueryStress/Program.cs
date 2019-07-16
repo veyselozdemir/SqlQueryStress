@@ -22,6 +22,8 @@ namespace SQLQueryStress
             var configFileName = string.Empty;
             var unattendedMode = false;
             int numThreads = -1;
+            var autoSaveFilePath = string.Empty;
+            var testName = string.Empty; 
 
             var options = new CommandLineOptions();
             ICommandLineParser parser = new CommandLineParser();
@@ -31,6 +33,8 @@ namespace SQLQueryStress
                 configFileName = options.SessionFile;
                 unattendedMode = options.Unattended;
                 numThreads = options.NumberOfThreads;
+                autoSaveFilePath = options.AutoSaveFilePath;
+                testName = options.TestName; 
             }
             if (writer.GetStringBuilder().Length > 0)
             {
@@ -38,7 +42,7 @@ namespace SQLQueryStress
             }
             else
             {
-                var f = new Form1(configFileName, unattendedMode, numThreads)
+                var f = new Form1(configFileName, unattendedMode, numThreads, autoSaveFilePath, testName)
                 {
                     StartPosition = FormStartPosition.CenterScreen
                 };

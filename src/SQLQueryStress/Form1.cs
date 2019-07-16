@@ -69,6 +69,9 @@ namespace SQLQueryStress
         private double _totalTime;
 
         private readonly bool _unattendedMode;
+        private string _autoSaveFilePath;
+        private string _testName; 
+
         //Number of query requests that returned time messages
         //Note:: Average times will be computed by:
         // A) Add up all results from time messages returned by 
@@ -82,22 +85,33 @@ namespace SQLQueryStress
         //WAITFOR DELAY '00:00:05'  (1300 ms?? WTF??)
         private int _totalTimeMessages;
 
-        public Form1(string configFile, bool unattendedMode, int numThreads) : this()
+        public Form1(string configFile, bool unattendedMode, int numThreads, string autoSaveFilePath, string testName) : this()
         {
-            var fileExists = File.Exists(configFile);
-            // load config file if specified
-            if (!string.IsNullOrWhiteSpace(configFile)
-                && fileExists)
+            _autoSaveFilePath = autoSaveFilePath;
+            _testName = testName;
+
+            if (string.IsNullOrWhiteSpace(configFile) != true)
             {
-                OpenConfigFile(configFile);
+                var isConfigFileExists = File.Exists(configFile);
+                if (isConfigFileExists)
+                {
+                    OpenConfigFile(configFile);
+                    _unattendedMode = unattendedMode;
+                    if (_unattendedMode)
+                    {
+                        Load += StartProcessing;
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException(string.Format("Config file could not be found: {0}", configFile)); 
+                }
             }
 
-            // set the start processing after form is loaded
-            _unattendedMode = unattendedMode;
-            if (unattendedMode && fileExists) Load += StartProcessing;
-            
-            // are we overriding the config file?
-            if (numThreads > 0) threads_numericUpDown.Value = _settings.NumThreads = numThreads;
+            if (numThreads > 0)
+            {
+                threads_numericUpDown.Value = _settings.NumThreads = numThreads;
+            }
         }
 
         public Form1()
@@ -207,10 +221,28 @@ namespace SQLQueryStress
 
             db_label.Text = "";
 
+            if (string.IsNullOrEmpty(_autoSaveFilePath) == false)
+            {
+                AutoSaveBenchmark(_autoSaveFilePath);
+            }
+
             // if we started automatically exit when done
             if (_exitOnComplete || _unattendedMode)
             {
                 Dispose();
+            }
+        }
+
+        private void AutoSaveBenchmark(string autoSaveFilePath)
+        {
+            string extension = Path.GetExtension(autoSaveFilePath).ToLower();
+            if (extension == ".csv")
+            {
+                ExportBenchMarkToCsvFile(autoSaveFilePath); 
+            }
+            else
+            {
+                ExportBenchMarkToTextFile(autoSaveFilePath);
             }
         }
 
@@ -625,6 +657,8 @@ namespace SQLQueryStress
 
         private void CreateBenchmarkText(TextWriter tw)
         {
+            tw.WriteLine(string.Format("Test Name: {0}",
+                                _testName));
             tw.WriteLine(string.Format("Test ID: {0}",
                                 _testGuid));
             tw.WriteLine(string.Format("Test TimeStamp: {0}",
@@ -686,9 +720,10 @@ namespace SQLQueryStress
 
             if (addHeader == true)
             {
-                tw.WriteLine("TestId,Timestamp,ElapsedTime,Iterations,Threads,Delay,CompletedIterations,AvgCPUSeconds,AvgActualSeconds,AvgClientSeconds,AvgLogicalReads"); 
+                tw.WriteLine("TestName,TestId,Timestamp,ElapsedTime,Iterations,Threads,Delay,CompletedIterations,AvgCPUSeconds,AvgActualSeconds,AvgClientSeconds,AvgLogicalReads"); 
             }
-            tw.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}.{10}", 
+            tw.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}", 
+                _testName,
                 _testGuid,
                 _testStartTime, 
                 elapsedTime_textBox.Text,
